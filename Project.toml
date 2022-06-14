@@ -1,0 +1,13 @@
+name = "WannierFunctions"
+uuid = "781be3fc-de49-439f-9ca7-a21a7db80ded"
+authors = ["Jae-Mo Lihm <jaemolim96@gmail.com> and contributors"]
+version = "0.1.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+julia = "1.7"
+
+[targets]
+test = ["Test"]
