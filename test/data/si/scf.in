@@ -1,0 +1,29 @@
+ &control
+    calculation     = 'scf'
+    prefix          = 'si'
+    restart_mode    = 'from_scratch'
+    pseudo_dir      = '~/PP/all/'
+    outdir          = './temp/'
+    tprnfor         = .true.
+    tstress         = .true.
+ /
+ &system
+    ibrav     = 2
+    celldm(1) = 10.26328
+    nat       = 2
+    ntyp      = 1
+    ecutwfc   = 70.0
+ /
+ &electrons
+    diagonalization = 'david'
+    mixing_beta     = 0.7
+    conv_thr        = 1.0d-15
+ /
+ATOMIC_SPECIES
+ Si  28.0855  Si.dojo.sr.ONCVv0.4.lda.standard.upf
+ATOMIC_POSITIONS crystal
+ Si  0.125   0.125   0.125
+ Si -0.125  -0.125  -0.125
+K_POINTS automatic
+ 14 14 14 0 0 0
+

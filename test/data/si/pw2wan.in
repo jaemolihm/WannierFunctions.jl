@@ -1,0 +1,13 @@
+&inputpp
+   outdir = 'temp/'
+   prefix = 'si'
+   seedname = 'si'
+   spin_component = 'none'
+   write_mmn = .true.
+   write_amn = .true.
+
+!scdm_proj         = .true.
+!scdm_entanglement = 'erfc'
+!scdm_mu = 42.0
+!scdm_sigma = 5.0
+/

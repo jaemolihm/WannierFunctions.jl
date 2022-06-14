@@ -1,5 +1,6 @@
 module WannierFunctions
-
-# Write your package code here.
-
+    include("wannier90_parsers.jl")
+    include("gauge_matrix.jl")
+    include("spreads_MV1997.jl")
+    include("wannierize.jl")
 end

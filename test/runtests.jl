@@ -1,6 +1,6 @@
 using WannierFunctions
 using Test
 
-@testset "WannierFunctions.jl" begin
-    # Write your tests here.
+@time @testset "WannierFunctions.jl" begin
+    include("test_silicon_valence.jl")
 end
