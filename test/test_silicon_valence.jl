@@ -32,7 +32,6 @@ using WannierFunctions
         U_initial[:, :, ik] .= u * v'
     end
 
-
     # Compute MV spread
     p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn)
 
