@@ -54,20 +54,19 @@ end
 
 
 
-function XY_to_A(p, X, Y)
+function X_Y_to_A(p, X, Y)
     A = zeros(ComplexF64, p.nband, p.nwannier, p.nktot)
     @views for ik = 1:p.nktot
         # l_frozen, l_not_frozen = local_frozen_sets(p, nfrozen, i, j, k, frozen_window_low, frozen_window_high)
         l_frozen = 1:0
         l_not_frozen = 1:p.nband
         lnf = count(l_frozen)
-        @assert Y[:,:, ik]'Y[:,:, ik] ≈ I
-        @assert X[:,:, ik]'X[:,:, ik] ≈ I
+        @assert Y[:,:, ik]' * Y[:,:, ik] ≈ I
+        @assert X[:,:, ik]' * X[:,:, ik] ≈ I
         @assert Y[l_frozen,1:lnf, ik] ≈ I
         @assert norm(Y[l_not_frozen,1:lnf, ik]) ≈ 0
         @assert norm(Y[l_frozen,lnf+1:end, ik]) ≈ 0
-        A[:, :, ik] .= Y[:, :, ik] * X[:, :, ik]
-        # @assert normalize_and_freeze(A[:,:, ik],lnf) ≈ A[:,:, ik] rtol=1e-4
+        mul!(A[:, :, ik], Y[:, :, ik], X[:, :, ik])
     end
     A
 end
@@ -111,13 +110,13 @@ function A_to_XY(p,A)
 end
 
 "convert XY to (X, Y)"
-function XY_to_XY(p, XY)
+function XY_to_X_Y(p, XY)
     X = zeros(ComplexF64, p.nwannier, p.nwannier, p.nktot)
     Y = zeros(ComplexF64, p.nband, p.nwannier, p.nktot)
-    for ik = 1:p.nktot
+    @views for ik = 1:p.nktot
         XYk = XY[:, ik]
-        X[:,:, ik] = reshape(XYk[1:p.nwannier*p.nwannier], (p.nwannier, p.nwannier))
-        Y[:,:, ik] = reshape(XYk[p.nwannier*p.nwannier+1:end], (p.nband, p.nwannier))
+        X[:, :, ik] .= reshape(XYk[1:p.nwannier*p.nwannier], (p.nwannier, p.nwannier))
+        Y[:, :, ik] .= reshape(XYk[p.nwannier*p.nwannier+1:end], (p.nband, p.nwannier))
     end
     X, Y
 end

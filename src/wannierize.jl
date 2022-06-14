@@ -3,7 +3,7 @@ using Optim
 export run_wannier_minimization
 
 function obj(p, X, Y)
-    A = XY_to_A(p, X, Y)
+    A = X_Y_to_A(p, X, Y)
 
     res = spreads_MV1997(p, A, true)
     func = res.spreads.Ω
@@ -54,17 +54,17 @@ function run_wannier_minimization(p, A; verbose=true, bfgs_history=20, max_iter=
     # XY: (nw*nw + nb*nw) x Ntot
     function fg!(G, XY)
         @assert size(G) == size(XY)
-        X,Y = XY_to_XY(p,XY)
+        X, Y = XY_to_X_Y(p, XY)
 
         f, gradX, gradY, res = obj(p, X, Y)
 
-        for ik = 1:p.nktot
-            G[:, ik] = vcat(vec(gradX[:,:, ik]),vec(gradY[:,:, ik]))
+        @views for ik = 1:p.nktot
+            G[:, ik] = vcat(vec(gradX[:,:, ik]), vec(gradY[:,:, ik]))
         end
         return f
     end
 
-    f(XY) = fg!(similar(XY),XY)
+    f(XY) = fg!(similar(XY), XY)
     g!(g, XY) = (fg!(g, XY); return g)
 
     # need QR orthogonalization rather than SVD to preserve the sparsity structure of Y
@@ -82,6 +82,6 @@ function run_wannier_minimization(p, A; verbose=true, bfgs_history=20, max_iter=
     verbose && display(res)
     XYmin = Optim.minimizer(res)
 
-    Xmin, Ymin = XY_to_XY(p, XYmin)
-    Amin = XY_to_A(p, Xmin, Ymin)
+    Xmin, Ymin = XY_to_X_Y(p, XYmin)
+    Amin = X_Y_to_A(p, Xmin, Ymin)
 end

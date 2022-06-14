@@ -2,7 +2,6 @@ using LinearAlgebra
 
 export spreads_MV1997
 
-# FIXME: is this needed?
 imaglog(z) = atan(imag(z), real(z))
 
 struct SpreadResults_X1X{T}
@@ -27,17 +26,20 @@ function spreads_MV1997(p, U, compute_grad=true)
     # ΩOD = 0.
     # ΩD = 0.
     # frozen_weight = 0.
-    R = zeros(ComplexF64, p.nband, p.nwannier)
-    T = zeros(ComplexF64, p.nband, p.nwannier)
-    Mkb = zeros(ComplexF64, p.nwannier, p.nwannier)
-    Okb = zeros(ComplexF64, p.nband, p.nwannier)
+    Rkb = zeros(ComplexF64, p.nband, p.nwannier)
+    Tkb = zeros(ComplexF64, p.nband, p.nwannier)
+    M = zeros(ComplexF64, p.nwannier, p.nwannier, p.nnb, p.nktot)
+    O = zeros(ComplexF64, p.nband, p.nwannier, p.nnb, p.nktot)
 
     for ik = 1:p.nktot
         @views for ib = 1:p.nnb
             ikb = p.neighbors[ib, ik]
             wb = p.wbs[ib]
             b = p.bvecs_cart[ib]
-            Mkb .= U[:, :, ik]' * p.M_bands[:, :, ib, ik] * U[:, :, ikb]
+            Okb = view(O, :, :, ib, ik)
+            Mkb = view(M, :, :, ib, ik)
+            mul!(Okb, p.M_bands[:, :, ib, ik], U[:, :, ikb])
+            mul!(Mkb, U[:, :, ik]', Okb)
 
             # Compute centers and spreads
             for n = 1:p.nwannier
@@ -60,15 +62,14 @@ function spreads_MV1997(p, U, compute_grad=true)
             ikb = p.neighbors[ib, ik]
             wb = p.wbs[ib]
             b = p.bvecs_cart[ib]
-    #     K = p.ijk_to_K[i,j,k]
 
-    #     frozen_weight -= mu*sum(abs2, A[1:nfrozen,:,i,j,k])
-    #     if compute_grad
-    #         grad[1:nfrozen,:,i,j,k] = -2*mu*A[1:nfrozen,:,i,j,k]
-    #     end
+        #     frozen_weight -= mu*sum(abs2, A[1:nfrozen,:, ik])
+        #     if compute_grad
+        #         grad[1:nfrozen,:, ik] = -2*mu*A[1:nfrozen,:, ik]
+        #     end
 
-            Okb .= p.M_bands[:, :, ib, ik] * U[:, :, ikb]
-            Mkb .= U[:, :, ik]' * Okb
+            Okb = view(O, :, :, ib, ik)
+            Mkb = view(M, :, :, ib, ik)
 
             if compute_grad
                 # #MV way
@@ -82,9 +83,7 @@ function spreads_MV1997(p, U, compute_grad=true)
                 # grad[:, :, ik] += 4*p.wbs*(A(R) .- S(T))
 
 
-                # Eq.(47) of MV1997
-                q = imaglog.(diag(Mkb)) .+ Ref(b') .* r
-                for n=1:p.nwannier
+                for n = 1:p.nwannier
                     if abs(Mkb[n, n]) < 1e-10
                         # error if division by zero. Should not happen if the initial gauge
                         # is not too bad
@@ -92,13 +91,16 @@ function spreads_MV1997(p, U, compute_grad=true)
                         display(Mkb)
                         error()
                     end
-                    Tfac = -im*q[n] / Mkb[n, n]
+
+                    # Eq.(47) of MV1997
+                    q = imaglog(Mkb[n, n]) + b' * r[n]
+                    Tfac = -im * q / Mkb[n, n]
                     for m = 1:p.nband
-                        R[m, n] = -Okb[m, n] * conj(Mkb[n, n])
-                        T[m, n] = Tfac * Okb[m, n]
+                        Rkb[m, n] = -Okb[m, n] * conj(Mkb[n, n])
+                        Tkb[m, n] = Tfac * Okb[m, n]
                     end
                 end
-                @. grad[:, :, ik] += 4 * wb * (R + T)
+                @. grad[:, :, ik] += 4 * wb * (Rkb + Tkb)
             end
 
     #         ΩI += p.wbs*(p.nwannier - sum(abs2,Mkb))
