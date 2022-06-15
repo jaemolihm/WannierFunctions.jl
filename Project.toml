@@ -9,6 +9,7 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
+Optim = "1"
 julia = "1.7"
 
 [extras]
