@@ -1,0 +1,7 @@
+
+&inputpp
+   prefix   = 'Cu'
+   outdir   = './temp'
+   seedname = 'Cu'
+/
+

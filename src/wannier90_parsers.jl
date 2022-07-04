@@ -1,6 +1,6 @@
 using StaticArrays
 
-export read_mmn, read_amn
+export read_mmn, read_amn, read_eig
 
 function read_mmn(seedname, kpts)
     println("Reading $seedname.mmn")
@@ -70,4 +70,19 @@ function read_amn(seedname)
     end
 
     amn
+end
+
+function read_eig(seedname)
+    local nband, nk
+    println("Reading $seedname.eig")
+    eigfile = open("$seedname.eig")
+    eigs = Float64[]
+    while(!eof(eigfile))
+        arr = split(readline(eigfile))
+        nband = parse(Int, arr[1])
+        nk = parse(Int, arr[2])
+        e = parse(Float64, arr[3])
+        push!(eigs, e)
+    end
+    reshape(eigs, nband, nk)
 end

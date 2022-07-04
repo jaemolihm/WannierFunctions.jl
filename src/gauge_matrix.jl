@@ -51,14 +51,11 @@ function normalize_and_freeze(A,frozen,not_frozen)
     return B
 end
 
-
-
 function X_Y_to_A(p, X, Y)
     A = zeros(ComplexF64, p.nband, p.nwannier, p.nktot)
     @views for ik = 1:p.nktot
-        # l_frozen, l_not_frozen = local_frozen_sets(p, nfrozen, i, j, k, frozen_window_low, frozen_window_high)
-        l_frozen = 1:0
-        l_not_frozen = 1:p.nband
+        l_frozen = p.l_frozen[ik]
+        l_not_frozen = p.l_not_frozen[ik]
         lnf = count(l_frozen)
         @assert Y[:,:, ik]' * Y[:,:, ik] ≈ I
         @assert X[:,:, ik]' * X[:,:, ik] ≈ I
@@ -74,11 +71,10 @@ function A_to_XY(p,A)
     X = zeros(ComplexF64, p.nwannier, p.nwannier, p.nktot)
     Y = zeros(ComplexF64, p.nband, p.nwannier, p.nktot)
     @views for ik = 1:p.nktot
-        # l_frozen, l_not_frozen = local_frozen_sets(p, nfrozen, i, j, k, frozen_window_low, frozen_window_high)
-        l_frozen = 1:0
-        l_not_frozen = 1:p.nband
-
+        l_frozen = p.l_frozen[ik]
+        l_not_frozen = p.l_not_frozen[ik]
         lnf = count(l_frozen)
+
         Afrozen = normalize_and_freeze(A[:,:, ik], l_frozen, l_not_frozen)
         Af = Afrozen[l_frozen,:]
         Ar = Afrozen[l_not_frozen,:]

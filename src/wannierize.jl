@@ -12,9 +12,8 @@ function obj(p, X, Y)
     gradX = zero(X)
     gradY = zero(Y)
     @views for ik = 1:p.nktot
-        # l_frozen, l_not_frozen = local_frozen_sets(p, nfrozen, i, j, k, frozen_window_low, frozen_window_high)
-        l_frozen = 1:0
-        l_not_frozen = 1:p.nband
+        l_frozen = p.l_frozen[ik]
+        l_not_frozen = p.l_not_frozen[ik]
         lnf = count(l_frozen)
         gradX[:,:, ik] .= Y[:,:, ik]' * grad[:,:, ik]
         gradY[:,:, ik] .= grad[:,:, ik] * X[:,:, ik]'

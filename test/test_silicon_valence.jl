@@ -26,14 +26,16 @@ using WannierFunctions
     @test norm(sum(wb * b * b' for (b, wb) in zip(bvecs_cart, wbs)) - I(3)) < 1e-10
 
     # Initial Uk from amn
-    U_initial = zeros(ComplexF64, nwannier, nwannier, nktot)
+    U_initial = zeros(ComplexF64, nband, nwannier, nktot)
     for ik in 1:nktot
         u, s, v = svd(amn[:, :, ik])
         U_initial[:, :, ik] .= u * v'
     end
 
     # Compute MV spread
-    p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn)
+    l_frozen = fill(falses(nband), nktot)
+    l_not_frozen = [.!x for x in l_frozen]
+    p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn, l_frozen, l_not_frozen)
 
     U_optimized = run_wannier_minimization(p, U_initial; f_tol=1e-20, g_tol=1e-8, verbose=false)
 

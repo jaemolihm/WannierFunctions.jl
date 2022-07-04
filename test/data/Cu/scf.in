@@ -1,0 +1,25 @@
+&control
+   calculation = 'scf'
+   pseudo_dir  = '~/PP/all/'
+   outdir      = './temp/'
+   prefix      = 'Cu'
+/
+&system
+   ibrav       = 2
+   celldm(1)   = 6.822
+   nat         = 1
+   ntyp        = 1
+   ecutwfc     = 70.0
+   occupations = 'smearing'
+   smearing    = 'cold'
+   degauss     = 0.02
+/
+&electrons
+   conv_thr = 1.0e-10
+/
+ATOMIC_SPECIES
+ Cu 63.546 Cu.dojo.sr.ONCVv0.4.pbe.standard.upf
+ATOMIC_POSITIONS
+ Cu 0.0 0.0 0.0
+K_POINTS (automatic)
+16 16 16 0 0 0
