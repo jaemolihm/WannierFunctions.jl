@@ -42,7 +42,6 @@ function normalize_and_freeze(A,frozen,not_frozen)
 
     A[not_frozen,:] = Ur'
 
-
     B = vcat(Uf',Ur')
     B[frozen,:] .= Uf'
     B[not_frozen,:] .= Ur'

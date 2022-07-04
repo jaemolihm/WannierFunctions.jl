@@ -40,12 +40,18 @@ using WannierFunctions
     res_initial = spreads_MV1997(p, U_initial)
     res_optimized = spreads_MV1997(p, U_optimized)
 
-    @test res_initial.spreads.centers[1] ≈ [-0.000000051184847,   0.000000047216987,   0.000000021319296] atol=1e-10
-    @test res_initial.spreads.centers[2] ≈ [-1.357773455928676,  -0.000000033936177,   1.357773443148921] atol=1e-10
-    @test res_initial.spreads.centers[3] ≈ [-0.000000018920307,   1.357773469930315,   1.357773495357232] atol=1e-10
-    @test res_initial.spreads.centers[4] ≈ [-1.357773469725397,   1.357773476549067,   0.000000005835030] atol=1e-10
-    @test res_initial.spreads.spreads ≈ [1.934027772294945, 1.934027794355982, 1.934027827106826, 1.934027700254801] atol=1e-10
-    @test res_initial.spreads.Ω ≈ 7.736111094012553 atol=1e-10
+    @test res_initial.spreads.centers[1] ≈ [-0.000000051184847,   0.000000047216987,   0.000000021319296]
+    @test res_initial.spreads.centers[2] ≈ [-1.357773455928676,  -0.000000033936177,   1.357773443148921]
+    @test res_initial.spreads.centers[3] ≈ [-0.000000018920307,   1.357773469930315,   1.357773495357232]
+    @test res_initial.spreads.centers[4] ≈ [-1.357773469725397,   1.357773476549067,   0.000000005835030]
+    @test res_initial.spreads.spreads ≈ [1.934027772294945, 1.934027794355982, 1.934027827106826, 1.934027700254801]
+    @test res_initial.spreads.Ω ≈ 7.736111094012553
+    @test res_initial.spreads.ΩI ≈ 7.101265930521826
+    @test res_initial.spreads.ΩD ≈ 0.0 atol=1e-10
+    @test res_initial.spreads.ΩOD ≈ 0.6348451634749296
 
-    @test res_optimized.spreads.Ω ≈ 7.659769051625176 atol=1e-10
+    @test res_optimized.spreads.Ω ≈ 7.659769051625176
+    @test res_optimized.spreads.ΩI ≈ 7.101265930521826
+    @test res_optimized.spreads.ΩD ≈ 0.0 atol=1e-10
+    @test res_optimized.spreads.ΩOD ≈ 0.5585031210877284
 end

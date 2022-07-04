@@ -4,27 +4,34 @@ export spreads_MV1997
 
 imaglog(z) = atan(imag(z), real(z))
 
-struct SpreadResults_X1X{T}
+struct SpreadResults_X3X{T}
     nwannier::Int
     centers::Vector{SVector{3, T}}
     spreads::Vector{T}
     Ω::T
+    ΩI::T
+    ΩD::T
+    ΩOD::T
 end
 
-function Base.show(io::IO, res::SpreadResults_X1X)
+function Base.show(io::IO, res::SpreadResults_X3X)
     for iw in 1:res.nwannier
         print(io, "$iw $(res.centers[iw]) $(res.spreads[iw])\n")
     end
     print(io, "Sum of centers and spreads $(sum(res.centers)) $(sum(res.spreads))\n")
+    print(io, "Omega I     = $(res.ΩI)\n")
+    print(io, "Omega D     = $(res.ΩD)\n")
+    print(io, "Omega OD    = $(res.ΩOD)\n")
+    print(io, "Omega Total = $(res.Ω)\n")
 end
 
 function spreads_MV1997(p, U, compute_grad=true)
     grad = zeros(ComplexF64, p.nband, p.nwannier, p.nktot)
     r = zeros(SVector{3, Float64}, p.nwannier)
     r2 = zeros(p.nwannier)
-    # ΩI = 0.
-    # ΩOD = 0.
-    # ΩD = 0.
+    ΩI = 0.
+    ΩOD = 0.
+    ΩD = 0.
     # frozen_weight = 0.
     Rkb = zeros(ComplexF64, p.nband, p.nwannier)
     Tkb = zeros(ComplexF64, p.nband, p.nwannier)
@@ -63,11 +70,6 @@ function spreads_MV1997(p, U, compute_grad=true)
             wb = p.wbs[ib]
             b = p.bvecs_cart[ib]
 
-        #     frozen_weight -= mu*sum(abs2, A[1:nfrozen,:, ik])
-        #     if compute_grad
-        #         grad[1:nfrozen,:, ik] = -2*mu*A[1:nfrozen,:, ik]
-        #     end
-
             Okb = view(O, :, :, ib, ik)
             Mkb = view(M, :, :, ib, ik)
 
@@ -81,7 +83,6 @@ function spreads_MV1997(p, U, compute_grad=true)
                 #     T[m,n] = Mkb[m,n]/Mkb[n,n]*q[n]
                 # end
                 # grad[:, :, ik] += 4*p.wbs*(A(R) .- S(T))
-
 
                 for n = 1:p.nwannier
                     if abs(Mkb[n, n]) < 1e-10
@@ -103,20 +104,18 @@ function spreads_MV1997(p, U, compute_grad=true)
                 @. grad[:, :, ik] += 4 * wb * (Rkb + Tkb)
             end
 
-    #         ΩI += p.wbs*(p.nwannier - sum(abs2,Mkb))
-    #         ΩOD += p.wbs*sum(abs2,Mkb .- diagm(0=>diag(Mkb)))
+            ΩI += wb * (p.nwannier - sum(abs2, Mkb))
+            ΩOD += wb * (sum(abs2, Mkb) - sum(abs2, Diagonal(Mkb)))
         end
     end
-    # Ntot = (p.N1*p.N2*p.N3)
-    # ΩI /= Ntot
-    # ΩOD /= Ntot
-    # ΩD /= Ntot
+    ΩI /= p.nktot
+    ΩOD /= p.nktot
     # frozen_weight /= Ntot
     grad ./= p.nktot
 
     spreads = @. r2 - norm(r)^2
     Ωtot = sum(spreads)
-    # Ωtilde = Ωtot - ΩI
+    ΩD = Ωtot - ΩI - ΩOD
     # return Omega_res(Ωtot,ΩI,ΩOD,ΩD,Ωtilde,frozen_weight,spreads,r,grad)
-    (; spreads=SpreadResults_X1X(p.nwannier, r, spreads, Ωtot), gradient=grad)
+    (; spreads=SpreadResults_X3X(p.nwannier, r, spreads, Ωtot, ΩI, ΩD, ΩOD), gradient=grad)
 end
