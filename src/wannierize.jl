@@ -21,13 +21,6 @@ function obj(p, X, Y)
 
         gradY[l_frozen,:, ik] .= 0
         gradY[:,1:lnf, ik] .= 0
-
-        # to compute the projected gradient: redundant, taken care of by the optimizer
-        # function proj_stiefel(G,X)
-        #     G .- X*((X'G .+ G'X)./2)
-        # end
-        # gradX[:,:, ik] = proj_stiefel(gradX[:,:, ik],X[:,:, ik])
-        # gradY[:,:, ik] = proj_stiefel(gradY[:,:, ik],Y[:,:, ik])
     end
     func, gradX, gradY, res
 end
