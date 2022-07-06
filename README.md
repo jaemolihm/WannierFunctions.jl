@@ -21,3 +21,4 @@ Largely adapted from https://github.com/antoine-levitt/wannier
 - [ ] Modularize params
 - [ ] Reduce compilation time
 - [ ] Test systems where W90 line search fails
+- [ ] Read kpoints, lattice, ... from win file (kpoint: currently kmesh.pl order is required.)
