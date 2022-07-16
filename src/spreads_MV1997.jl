@@ -15,8 +15,9 @@ struct SpreadResults_X3X{T}
 end
 
 function Base.show(io::IO, res::SpreadResults_X3X)
+    print(io, "Wannier centers and spreads (Angstrom)\n")
     for iw in 1:res.nwannier
-        print(io, "$iw $(res.centers[iw]) $(res.spreads[iw])\n")
+        print(io, @sprintf "%d %15.8f %15.8f %15.8f %15.8f\n" iw res.centers[iw][1] res.centers[iw][2] res.centers[iw][3] res.spreads[iw])
     end
     print(io, "Sum of centers and spreads $(sum(res.centers)) $(sum(res.spreads))\n")
     print(io, "Omega I     = $(res.ΩI)\n")
