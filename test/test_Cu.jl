@@ -3,7 +3,7 @@ using LinearAlgebra
 using StaticArrays
 using WannierFunctions
 
-@testset "silicon valence" begin
+@testset "Cu" begin
     BASE_FOLDER = dirname(dirname(pathof(WannierFunctions)))
     seedname = joinpath(BASE_FOLDER, "test", "data", "Cu", "Cu")
 
@@ -33,22 +33,15 @@ using WannierFunctions
         U_initial[:, :, ik] .= u * v'
     end
 
+    functional = MarzariVanderbiltFunctional(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
+
     # Compute MV spread
     l_frozen = fill(falses(nband), nktot)
     l_not_frozen = [.!x for x in l_frozen]
     p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn, l_frozen, l_not_frozen)
-    res_initial = spreads_MV1997(p, U_initial)
-
-    U_opt_no_window = run_wannier_minimization(p, U_initial; f_tol=1e-20, g_tol=1e-8, verbose=false)
-    res_opt_no_window = spreads_MV1997(p, U_opt_no_window)
-
-    dis_froz_max = 20.0
-    p.l_frozen .= [eig[:, ik] .< dis_froz_max for ik in 1:p.nktot]
-    p.l_not_frozen .= [.!x for x in l_frozen]
-    U_opt_froz = run_wannier_minimization(p, U_initial; f_tol=1e-20, g_tol=1e-8, verbose=false)
-    res_opt_froz = spreads_MV1997(p, U_opt_froz)
 
     # Test projection-only WFs
+    spreads_initial = compute_objective(U_initial, functional).spreads
     r_proj_only_wannier90 = [
         [ 0.000000000031795, -0.000000000002363,  0.000000000001633],
         [ 0.000000000011655, -0.000000000014041,  0.000000000050861],
@@ -61,23 +54,34 @@ using WannierFunctions
     spreads_proj_only_wannier90 = [0.645497433074877, 0.443233870388558, 0.443233870389778,
         0.645419079898551, 0.443235741490892, 1.009068611500336, 1.009068611488011]
     for iw in 1:nwannier
-        @test res_initial.spreads.centers[iw] ≈ r_proj_only_wannier90[iw] atol=1e-10
+        @test spreads_initial.centers[iw] ≈ r_proj_only_wannier90[iw] atol=1e-10
     end
-    @test res_initial.spreads.spreads ≈ spreads_proj_only_wannier90
-    @test res_initial.spreads.Ω ≈ 4.638757218231004
-    @test res_initial.spreads.ΩI ≈ 3.801670014961136
-    @test res_initial.spreads.ΩD ≈ 0.005395159613377665
-    @test res_initial.spreads.ΩOD ≈ 0.8316920436570605
+    @test spreads_initial.spreads ≈ spreads_proj_only_wannier90
+    @test spreads_initial.Ω ≈ 4.638757218231004
+    @test spreads_initial.ΩI ≈ 3.801670014961136
+    @test spreads_initial.ΩD ≈ 0.005395159613377665
+    @test spreads_initial.ΩOD ≈ 0.8316920436570605
 
-    @test res_opt_no_window.spreads.Ω ≈ 3.2927830611080546
-    @test res_opt_no_window.spreads.ΩI ≈ 3.169871256263533
-    @test res_opt_no_window.spreads.ΩD ≈ 0.008861537122230756
-    @test res_opt_no_window.spreads.ΩOD ≈ 0.11405026772229071
+    # Test Wannierization without any window
+    U_opt_no_window = run_wannier_minimization(p, U_initial, functional; verbose=false)
+    spreads_opt_no_window = compute_objective(U_opt_no_window, functional).spreads
 
-    @test res_opt_froz.spreads.Ω ≈ 3.795583395565954
-    @test res_opt_froz.spreads.ΩI ≈ 3.4917706157204274
-    @test res_opt_froz.spreads.ΩD ≈ 0.0015655121204359856
-    @test res_opt_froz.spreads.ΩOD ≈ 0.3022472677250906
+    @test spreads_opt_no_window.Ω ≈ 3.2927830611080546
+    @test spreads_opt_no_window.ΩI ≈ 3.169871256263533
+    @test spreads_opt_no_window.ΩD ≈ 0.008861537122230756
+    @test spreads_opt_no_window.ΩOD ≈ 0.11405026772229071
+
+    # Test Wannierization with frozen window
+    dis_froz_max = 20.0
+    p.l_frozen .= [eig[:, ik] .< dis_froz_max for ik in 1:p.nktot]
+    p.l_not_frozen .= [.!x for x in l_frozen]
+    U_opt_froz = run_wannier_minimization(p, U_initial, functional; verbose=false)
+    spreads_opt_froz = compute_objective(U_opt_froz, functional).spreads
+
+    @test spreads_opt_froz.Ω ≈ 3.795583395565954
+    @test spreads_opt_froz.ΩI ≈ 3.4917706157204274
+    @test spreads_opt_froz.ΩD ≈ 0.0015655121204359856
+    @test spreads_opt_froz.ΩOD ≈ 0.3022472677250906
 
     # Check frozen window constraint is satisfied
     for ik in 1:p.nktot

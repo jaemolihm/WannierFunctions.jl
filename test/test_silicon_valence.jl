@@ -32,28 +32,28 @@ using WannierFunctions
         U_initial[:, :, ik] .= u * v'
     end
 
-    # Compute MV spread
     l_frozen = fill(falses(nband), nktot)
     l_not_frozen = [.!x for x in l_frozen]
     p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn, l_frozen, l_not_frozen)
+    functional = MarzariVanderbiltFunctional(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
 
-    U_optimized = run_wannier_minimization(p, U_initial; f_tol=1e-20, g_tol=1e-8, verbose=false)
+    # Test projection-only WFs
+    spreads_initial = compute_objective(U_initial, functional).spreads
+    @test spreads_initial.centers[1] ≈ [-0.000000051184847,   0.000000047216987,   0.000000021319296]
+    @test spreads_initial.centers[2] ≈ [-1.357773455928676,  -0.000000033936177,   1.357773443148921]
+    @test spreads_initial.centers[3] ≈ [-0.000000018920307,   1.357773469930315,   1.357773495357232]
+    @test spreads_initial.centers[4] ≈ [-1.357773469725397,   1.357773476549067,   0.000000005835030]
+    @test spreads_initial.spreads ≈ [1.934027772294945, 1.934027794355982, 1.934027827106826, 1.934027700254801]
+    @test spreads_initial.Ω ≈ 7.736111094012553
+    @test spreads_initial.ΩI ≈ 7.101265930521826
+    @test spreads_initial.ΩD ≈ 0.0 atol=1e-10
+    @test spreads_initial.ΩOD ≈ 0.6348451634749296
 
-    res_initial = spreads_MV1997(p, U_initial)
-    res_optimized = spreads_MV1997(p, U_optimized)
-
-    @test res_initial.spreads.centers[1] ≈ [-0.000000051184847,   0.000000047216987,   0.000000021319296]
-    @test res_initial.spreads.centers[2] ≈ [-1.357773455928676,  -0.000000033936177,   1.357773443148921]
-    @test res_initial.spreads.centers[3] ≈ [-0.000000018920307,   1.357773469930315,   1.357773495357232]
-    @test res_initial.spreads.centers[4] ≈ [-1.357773469725397,   1.357773476549067,   0.000000005835030]
-    @test res_initial.spreads.spreads ≈ [1.934027772294945, 1.934027794355982, 1.934027827106826, 1.934027700254801]
-    @test res_initial.spreads.Ω ≈ 7.736111094012553
-    @test res_initial.spreads.ΩI ≈ 7.101265930521826
-    @test res_initial.spreads.ΩD ≈ 0.0 atol=1e-10
-    @test res_initial.spreads.ΩOD ≈ 0.6348451634749296
-
-    @test res_optimized.spreads.Ω ≈ 7.659769051625176
-    @test res_optimized.spreads.ΩI ≈ 7.101265930521826
-    @test res_optimized.spreads.ΩD ≈ 0.0 atol=1e-10
-    @test res_optimized.spreads.ΩOD ≈ 0.5585031210877284
+    # Test maximally localized WFs
+    U_optimized = run_wannier_minimization(p, U_initial, functional; verbose=false)
+    spreads_optimized = compute_objective(U_optimized, functional).spreads
+    @test spreads_optimized.Ω ≈ 7.659769051625176
+    @test spreads_optimized.ΩI ≈ 7.101265930521826
+    @test spreads_optimized.ΩD ≈ 0.0 atol=1e-10
+    @test spreads_optimized.ΩOD ≈ 0.5585031210877284
 end

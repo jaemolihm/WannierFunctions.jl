@@ -2,27 +2,26 @@ using Optim
 
 export run_wannier_minimization
 
-function obj(p, X, Y)
-    A = X_Y_to_A(p, X, Y)
+function obj(p, X, Y, functional::AbstractWannierFunctional)
+    U = X_Y_to_A(p, X, Y)
+    grad = zero(U)
 
-    res = spreads_MV1997(p, A, true)
-    func = res.spreads.Ω
-    grad = res.gradient
+    objective = compute_objective_and_gradient!(grad, U, functional).objective
 
     gradX = zero(X)
     gradY = zero(Y)
     @views for ik = 1:p.nktot
         l_frozen = p.l_frozen[ik]
-        l_not_frozen = p.l_not_frozen[ik]
-        lnf = count(l_frozen)
-        gradX[:,:, ik] .= Y[:,:, ik]' * grad[:,:, ik]
-        gradY[:,:, ik] .= grad[:,:, ik] * X[:,:, ik]'
+        nfroz = count(l_frozen)
+        gradX[:, :, ik] .= Y[:, :, ik]' * grad[:, :, ik]
+        gradY[:, :, ik] .= grad[:, :, ik] * X[:, :, ik]'
 
-        gradY[l_frozen,:, ik] .= 0
-        gradY[:,1:lnf, ik] .= 0
+        gradY[l_frozen, :, ik] .= 0
+        gradY[:, 1:nfroz, ik] .= 0
     end
-    func, gradX, gradY, res
+    objective, gradX, gradY
 end
+
 
 """
 - `f_tol``: tolerance on spread
@@ -30,9 +29,11 @@ end
 - `max_iter=100`: maximum optimization iterations
 - `bfgs_history=20`: history size of BFGS
 """
-function run_wannier_minimization(p, A; verbose=true, bfgs_history=20, max_iter=100, f_tol, g_tol)
+function run_wannier_minimization(p, U, functional::AbstractWannierFunctional;
+    verbose=true, bfgs_history=20, max_iter=100, f_tol=1e-20, g_tol=1e-8)
+
     # initial X,Y
-    X0, Y0 = A_to_XY(p, A)
+    X0, Y0 = A_to_XY(p, U)
 
     M = p.nwannier*p.nwannier + p.nband*p.nwannier
     XY0 = zeros(ComplexF64, M, p.nktot)
@@ -42,13 +43,13 @@ function run_wannier_minimization(p, A; verbose=true, bfgs_history=20, max_iter=
 
     # We have three formats:
     # (X,Y): Ntot x nw x nw, Ntot x nb x nw
-    # A: ntot x nb x nw
+    # U: ntot x nb x nw
     # XY: (nw*nw + nb*nw) x Ntot
     function fg!(G, XY)
         @assert size(G) == size(XY)
         X, Y = XY_to_X_Y(p, XY)
 
-        f, gradX, gradY, res = obj(p, X, Y)
+        f, gradX, gradY = obj(p, X, Y, functional)
 
         @views for ik = 1:p.nktot
             G[:, ik] = vcat(vec(gradX[:,:, ik]), vec(gradY[:,:, ik]))
@@ -72,8 +73,9 @@ function run_wannier_minimization(p, A; verbose=true, bfgs_history=20, max_iter=
                       allow_f_increases=true)
     )
     verbose && display(res)
-    XYmin = Optim.minimizer(res)
+    XYopt = Optim.minimizer(res)
 
-    Xmin, Ymin = XY_to_X_Y(p, XYmin)
-    Amin = X_Y_to_A(p, Xmin, Ymin)
+    Xopt, Yopt = XY_to_X_Y(p, XYopt)
+    Uopt = X_Y_to_A(p, Xopt, Yopt)
+    Uopt
 end

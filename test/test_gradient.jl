@@ -26,7 +26,7 @@ using LinearAlgebra
     wbs = [0.3713799710197723 for _ in 1:8]
     bvecs_cart = Ref(recip_lattice) .* bvecs
 
-    p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn)
+    functional = MarzariVanderbiltFunctional(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
 
     # Initialize random unitary matrix
     U0 = zeros(ComplexF64, nband, nwannier, nktot)
@@ -35,13 +35,13 @@ using LinearAlgebra
         u2, _ = qr(rand(ComplexF64, nwannier, nwannier))
         U0[:, :, ik] .= u1 * vcat(I(nwannier), zeros(nband - nwannier, nwannier)) * u2
     end
-    res0 = spreads_MV1997(p, U0, true)
+    gradient = compute_objective_and_gradient!(zero(U0), U0, functional).gradient
 
     # Apply small perturbation to U
     ΔU = rand(ComplexF64, nband, nwannier, nktot)
-    compute_spreads(x) = spreads_MV1997(p, U0 .+ x .* ΔU, false).spreads.Ω
+    compute_Ω(x) = compute_objective(U0 .+ x .* ΔU, functional).objective
 
-    ΔΩ_finitediff = central_fdm(5, 1)(compute_spreads, 0)
-    ΔΩ_grad = real(sum(conj(res0.gradient) .* ΔU))
+    ΔΩ_finitediff = central_fdm(5, 1)(compute_Ω, 0)
+    ΔΩ_grad = real(sum(conj(gradient) .* ΔU))
     @test ΔΩ_finitediff ≈ ΔΩ_grad
 end
