@@ -1,6 +1,8 @@
 using LinearAlgebra
 
 export SymmetryConstraintObjective
+export AugmentationObjective
+export update_multipliers!
 
 """
 Constraints for symmetry-adapted Wannier functions
@@ -76,4 +78,61 @@ function compute_objective_and_gradient!(gradient, U, obj::SymmetryConstraintObj
         end
     end
     gradient !== nothing ? (; objective, gradient) : (; objective)
+end
+
+"""
+Objective for augmented Lagrangian method.
+objective(U) = real(sum(conj.(λ) .* (Usk - D_band * Uk * D_wann')))
+"""
+struct AugmentationObjective <: AbstractWannierObjective
+    λ::Array{ComplexF64, 4}
+    symobj::SymmetryConstraintObjective
+end
+
+function Base.show(io::IO, obj::AugmentationObjective)
+    print(io, "AugmentationObjective(")
+    print(io, "size(λ) = ", size(obj.λ))
+    print(io, ")")
+end
+
+function AugmentationObjective(symobj)
+    nband = size(symobj.d_matrix_band, 1)
+    nwannier = size(symobj.d_matrix_wann, 1)
+    λ = zeros(ComplexF64, nband, nwannier, symobj.nsymmetry, symobj.nkirr)
+    AugmentationObjective(λ, symobj)
+end
+
+function compute_objective_and_gradient!(gradient, U, obj::AugmentationObjective, factor=1)
+    (; λ, symobj) = obj
+    objective = zero(real(eltype(U)))
+    @views for (ikirr, isym) in symobj.constraints_to_use
+        ik = symobj.ikirr_to_ik[ikirr]
+        isk = symobj.ikirr_isym_to_isk[ikirr][isym]
+        Uk = U[:, :, ik]
+        Usk = U[:, :, isk]
+        D_band = symobj.d_matrix_band[:, :, isym, ikirr]
+        D_wann = symobj.d_matrix_wann[:, :, isym, ikirr]
+        C = Usk - D_band * Uk * D_wann'
+        objective += factor * real(sum(conj.(λ[:, :, isym, ikirr]) .* C))
+        if gradient !== nothing
+            gradient[:, :, isk] .+= factor .* λ[:, :, isym, ikirr]
+            gradient[:, :, ik] .-= factor .* (D_band' * λ[:, :, isym, ikirr] * D_wann)
+        end
+    end
+    gradient !== nothing ? (; objective, gradient) : (; objective)
+end
+
+function update_multipliers!(obj::AugmentationObjective, U, μ)
+    (; λ, symobj) = obj
+    @views for (ikirr, isym) in symobj.constraints_to_use
+        ik = symobj.ikirr_to_ik[ikirr]
+        isk = symobj.ikirr_isym_to_isk[ikirr][isym]
+        Uk = U[:, :, ik]
+        Usk = U[:, :, isk]
+        D_band = symobj.d_matrix_band[:, :, isym, ikirr]
+        D_wann = symobj.d_matrix_wann[:, :, isym, ikirr]
+        C = Usk - D_band * Uk * D_wann'
+        λ[:, :, isym, ikirr] .+= μ .* C
+    end
+    obj
 end

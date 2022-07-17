@@ -26,6 +26,7 @@ using LinearAlgebra
 
     obj_spread = MarzariVanderbiltObjective(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
     obj_symmetry = SymmetryConstraintObjective(seedname, nwannier)
+    obj_augmentation = AugmentationObjective(obj_symmetry)
 
     @testset "CompositeWannierObjective" begin
         obj1 = obj_spread
@@ -61,23 +62,26 @@ using LinearAlgebra
 
     # Test correctness of gradient
     @testset "gradient" begin
-        objs_to_test = [obj_spread, obj_symmetry, obj_spread * 2 + obj_symmetry * 3.]
+        objs_to_test = [obj_spread, obj_symmetry, obj_augmentation, obj_spread * 2. + obj_symmetry * 3. + obj_augmentation * 4.]
+
+        # Initialize random unitary matrix U0 and perturbation matrix ΔU
+        U0 = zeros(ComplexF64, nband, nwannier, nktot)
+        for ik in 1:nktot
+            u1, _ = qr(rand(ComplexF64, nband, nband))
+            u2, _ = qr(rand(ComplexF64, nwannier, nwannier))
+            U0[:, :, ik] .= u1 * vcat(I(nwannier), zeros(nband - nwannier, nwannier)) * u2
+        end
+        ΔU = rand(ComplexF64, nband, nwannier, nktot)
+
         for obj in objs_to_test
-            # Initialize random unitary matrix
-            U0 = zeros(ComplexF64, nband, nwannier, nktot)
-            for ik in 1:nktot
-                u1, _ = qr(rand(ComplexF64, nband, nband))
-                u2, _ = qr(rand(ComplexF64, nwannier, nwannier))
-                U0[:, :, ik] .= u1 * vcat(I(nwannier), zeros(nband - nwannier, nwannier)) * u2
-            end
+            # Compute derivative of objective from the gradient
             gradient = compute_objective_and_gradient!(zero(U0), U0, obj).gradient
-
-            # Apply small perturbation to U
-            ΔU = rand(ComplexF64, nband, nwannier, nktot)
-            compute_Ω(x) = compute_objective(U0 .+ x .* ΔU, obj).objective
-
-            ΔΩ_finitediff = central_fdm(5, 1)(compute_Ω, 0)
             ΔΩ_grad = real(sum(conj(gradient) .* ΔU))
+
+            # Compute derivative of objective by finite difference
+            compute_Ω(x) = compute_objective(U0 .+ x .* ΔU, obj).objective
+            ΔΩ_finitediff = central_fdm(5, 1)(compute_Ω, 0)
+
             @test ΔΩ_finitediff ≈ ΔΩ_grad
         end
     end
