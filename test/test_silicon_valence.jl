@@ -39,12 +39,12 @@ using WannierFunctions
 
     # Test projection-only WFs
     spreads_initial = compute_objective(U_initial, obj_spread).spreads
-    @test spreads_initial.centers[1] ≈ [-0.000000051184847,   0.000000047216987,   0.000000021319296]
-    @test spreads_initial.centers[2] ≈ [-1.357773455928676,  -0.000000033936177,   1.357773443148921]
-    @test spreads_initial.centers[3] ≈ [-0.000000018920307,   1.357773469930315,   1.357773495357232]
-    @test spreads_initial.centers[4] ≈ [-1.357773469725397,   1.357773476549067,   0.000000005835030]
-    @test spreads_initial.spreads ≈ [1.934027772294945, 1.934027794355982, 1.934027827106826, 1.934027700254801]
-    @test spreads_initial.Ω ≈ 7.736111094012553
+    @test spreads_initial.centers[1] ≈ [-0.000000048556263,   0.000000047513253,   0.000000018410154]
+    @test spreads_initial.centers[2] ≈ [-1.357773456945650,  -0.000000033901459,   1.357773443853951]
+    @test spreads_initial.centers[3] ≈ [-0.000000017549235,   1.357773468871673,   1.357773496612360]
+    @test spreads_initial.centers[4] ≈ [-1.357773469657212,   1.357773476796729,   0.000000006038467]
+    @test spreads_initial.spreads ≈ [1.934027748817770, 1.934027789252705, 1.934027832285140, 1.934027699757896]
+    @test spreads_initial.Ω ≈ 7.736111070113513
     @test spreads_initial.ΩI ≈ 7.101265930521826
     @test spreads_initial.ΩD ≈ 0.0 atol=1e-10
     @test spreads_initial.ΩOD ≈ 0.6348451634749296
@@ -52,7 +52,7 @@ using WannierFunctions
     # Test maximally localized WFs
     U_optimized = run_wannier_minimization(p, U_initial, obj_spread; verbose=false)
     spreads_optimized = compute_objective(U_optimized, obj_spread).spreads
-    @test spreads_optimized.Ω ≈ 7.659769051625176
+    @test spreads_optimized.Ω ≈ 7.659769027810093
     @test spreads_optimized.ΩI ≈ 7.101265930521826
     @test spreads_optimized.ΩD ≈ 0.0 atol=1e-10
     @test spreads_optimized.ΩOD ≈ 0.5585031210877284
