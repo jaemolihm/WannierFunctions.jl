@@ -56,7 +56,7 @@ function Base.show(io::IO, obj::MarzariVanderbiltObjective)
     print(io, ")")
 end
 
-function compute_objective_and_gradient!(gradient, U, obj::MarzariVanderbiltObjective)
+function compute_objective_and_gradient!(gradient, U, obj::MarzariVanderbiltObjective, factor=1)
     r = zeros(SVector{3, Float64}, obj.nwannier)
     r2 = zeros(obj.nwannier)
     ΩI = 0.
@@ -133,15 +133,15 @@ function compute_objective_and_gradient!(gradient, U, obj::MarzariVanderbiltObje
                         Tkb[m, n] = Tfac * Okb[m, n]
                     end
                 end
-                @. gradient[:, :, ik] += 4 * wb * (Rkb + Tkb)
+                @. gradient[:, :, ik] += 4 * wb * (Rkb + Tkb) * factor / obj.nktot
             end
         end
-        gradient ./= obj.nktot
     end
+    objective = Ωtot * factor
 
     if gradient !== nothing
-        (; objective=Ωtot, gradient, spreads=spread_result)
+        (; objective, gradient, spreads=spread_result)
     else
-        (; objective=Ωtot, spreads=spread_result)
+        (; objective, spreads=spread_result)
     end
 end
