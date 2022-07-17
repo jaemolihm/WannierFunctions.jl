@@ -5,7 +5,7 @@ export spreads_MV1997
 
 imaglog(z) = atan(imag(z), real(z))
 
-struct SpreadResults_X3X{T}
+struct SpreadResult{T}
     nwannier::Int
     centers::Vector{SVector{3, T}}
     spreads::Vector{T}
@@ -15,7 +15,7 @@ struct SpreadResults_X3X{T}
     ΩOD::T
 end
 
-function Base.show(io::IO, res::SpreadResults_X3X)
+function Base.show(io::IO, res::SpreadResult)
     print(io, "Wannier centers and spreads (Angstrom)\n")
     for iw in 1:res.nwannier
         print(io, @sprintf "%d %15.8f %15.8f %15.8f %15.8f\n" iw res.centers[iw][1] res.centers[iw][2] res.centers[iw][3] res.spreads[iw])
@@ -119,5 +119,5 @@ function spreads_MV1997(p, U, compute_grad=true)
     Ωtot = sum(spreads)
     ΩD = Ωtot - ΩI - ΩOD
     # return Omega_res(Ωtot,ΩI,ΩOD,ΩD,Ωtilde,frozen_weight,spreads,r,grad)
-    (; spreads=SpreadResults_X3X(p.nwannier, r, spreads, Ωtot, ΩI, ΩD, ΩOD), gradient=grad)
+    (; spreads=SpreadResult(p.nwannier, r, spreads, Ωtot, ΩI, ΩD, ΩOD), gradient=grad)
 end
