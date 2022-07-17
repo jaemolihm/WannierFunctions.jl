@@ -35,10 +35,10 @@ using WannierFunctions
     l_frozen = fill(falses(nband), nktot)
     l_not_frozen = [.!x for x in l_frozen]
     p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn, l_frozen, l_not_frozen)
-    functional = MarzariVanderbiltFunctional(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
+    obj_spread = MarzariVanderbiltObjective(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
 
     # Test MV spread for projection-only WFs
-    res = compute_objective(U_initial, functional)
+    res = compute_objective(U_initial, obj_spread)
     @test res.objective ≈ res.spreads.Ω
 
     # Compare with reference data obtained by Wannier90
@@ -64,11 +64,11 @@ using WannierFunctions
             u2, _ = qr(rand(ComplexF64, nwannier, nwannier))
             U0[:, :, ik] .= u1 * vcat(I(nwannier), zeros(nband - nwannier, nwannier)) * u2
         end
-        gradient = compute_objective_and_gradient!(zero(U0), U0, functional).gradient
+        gradient = compute_objective_and_gradient!(zero(U0), U0, obj_spread).gradient
 
         # Apply small perturbation to U
         ΔU = rand(ComplexF64, nband, nwannier, nktot)
-        compute_Ω(x) = compute_objective(U0 .+ x .* ΔU, functional).objective
+        compute_Ω(x) = compute_objective(U0 .+ x .* ΔU, obj_spread).objective
 
         ΔΩ_finitediff = central_fdm(5, 1)(compute_Ω, 0)
         ΔΩ_grad = real(sum(conj(gradient) .* ΔU))

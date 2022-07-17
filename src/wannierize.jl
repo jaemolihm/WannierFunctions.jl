@@ -2,7 +2,7 @@ using Optim
 
 export run_wannier_minimization
 
-function obj(p, X, Y, functional::AbstractWannierFunctional)
+function obj(p, X, Y, functional::AbstractWannierObjective)
     U = X_Y_to_A(p, X, Y)
     grad = zero(U)
 
@@ -29,7 +29,7 @@ end
 - `max_iter=100`: maximum optimization iterations
 - `bfgs_history=20`: history size of BFGS
 """
-function run_wannier_minimization(p, U, functional::AbstractWannierFunctional;
+function run_wannier_minimization(p, U, functional::AbstractWannierObjective;
     verbose=true, bfgs_history=20, max_iter=100, f_tol=1e-20, g_tol=1e-8)
 
     # initial X,Y

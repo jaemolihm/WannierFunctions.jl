@@ -1,7 +1,7 @@
 module WannierFunctions
     include("wannier90_parsers.jl")
     include("gauge_matrix.jl")
-    include("AbstractWannierFunctional.jl")
-    include("MarzariVanderbiltFunctional.jl")
+    include("objectives/AbstractWannierObjective.jl")
+    include("objectives/MarzariVanderbilt.jl")
     include("wannierize.jl")
 end

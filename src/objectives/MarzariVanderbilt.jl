@@ -1,7 +1,7 @@
 using Printf
 using LinearAlgebra
 
-export MarzariVanderbiltFunctional
+export MarzariVanderbiltObjective
 
 imaglog(z) = atan(imag(z), real(z))
 
@@ -30,7 +30,7 @@ end
 """
 Marzari and Vanderbilt (1997)
 """
-Base.@kwdef struct MarzariVanderbiltFunctional <: AbstractWannierFunctional
+Base.@kwdef struct MarzariVanderbiltObjective <: AbstractWannierObjective
     nband::Int
     nwannier::Int
     nktot::Int
@@ -47,8 +47,8 @@ Base.@kwdef struct MarzariVanderbiltFunctional <: AbstractWannierFunctional
     O::Array{ComplexF64, 4} = zeros(ComplexF64, nband, nwannier, nnb, nktot)
 end
 
-function Base.show(io::IO, obj::MarzariVanderbiltFunctional)
-    print(io, "MarzariVanderbiltFunctional(")
+function Base.show(io::IO, obj::MarzariVanderbiltObjective)
+    print(io, "MarzariVanderbiltObjective(")
     print(io, "nband = ", obj.nband)
     print(io, ", nwannier = ", obj.nwannier)
     print(io, ", nktot = ", obj.nktot)
@@ -56,7 +56,7 @@ function Base.show(io::IO, obj::MarzariVanderbiltFunctional)
     print(io, ")")
 end
 
-function compute_objective_and_gradient!(gradient, U, obj::MarzariVanderbiltFunctional)
+function compute_objective_and_gradient!(gradient, U, obj::MarzariVanderbiltObjective)
     r = zeros(SVector{3, Float64}, obj.nwannier)
     r2 = zeros(obj.nwannier)
     ΩI = 0.

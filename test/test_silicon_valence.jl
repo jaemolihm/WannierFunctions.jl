@@ -35,10 +35,10 @@ using WannierFunctions
     l_frozen = fill(falses(nband), nktot)
     l_not_frozen = [.!x for x in l_frozen]
     p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn, l_frozen, l_not_frozen)
-    functional = MarzariVanderbiltFunctional(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
+    obj_spread = MarzariVanderbiltObjective(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
 
     # Test projection-only WFs
-    spreads_initial = compute_objective(U_initial, functional).spreads
+    spreads_initial = compute_objective(U_initial, obj_spread).spreads
     @test spreads_initial.centers[1] ≈ [-0.000000051184847,   0.000000047216987,   0.000000021319296]
     @test spreads_initial.centers[2] ≈ [-1.357773455928676,  -0.000000033936177,   1.357773443148921]
     @test spreads_initial.centers[3] ≈ [-0.000000018920307,   1.357773469930315,   1.357773495357232]
@@ -50,8 +50,8 @@ using WannierFunctions
     @test spreads_initial.ΩOD ≈ 0.6348451634749296
 
     # Test maximally localized WFs
-    U_optimized = run_wannier_minimization(p, U_initial, functional; verbose=false)
-    spreads_optimized = compute_objective(U_optimized, functional).spreads
+    U_optimized = run_wannier_minimization(p, U_initial, obj_spread; verbose=false)
+    spreads_optimized = compute_objective(U_optimized, obj_spread).spreads
     @test spreads_optimized.Ω ≈ 7.659769051625176
     @test spreads_optimized.ΩI ≈ 7.101265930521826
     @test spreads_optimized.ΩD ≈ 0.0 atol=1e-10

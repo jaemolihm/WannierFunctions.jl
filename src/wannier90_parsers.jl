@@ -1,4 +1,5 @@
 using StaticArrays
+using Dates
 
 export read_mmn, read_amn, read_eig
 
@@ -85,4 +86,62 @@ function read_eig(seedname)
         push!(eigs, e)
     end
     reshape(eigs, nband, nk)
+end
+
+function write_amn(U, seedname)
+    nband, nwannier, nktot = size(U)
+    f = open("$seedname.amn","w")
+    write(f, "Created by WannierFunctions.jl ", string(now()), "\n")
+    write(f, "$nband $nktot $nwannier\n")
+    for ik = 1:nktot
+        for iw in 1:nwannier
+            for ib in 1:nband
+                coeff = U[ib, iw, ik]
+                write(f, "$ib $iw $ik $(real(coeff)) $(imag(coeff))\n")
+            end
+        end
+    end
+    close(f)
+end
+
+function read_dmn(seedname, nwannier)
+    println("Reading $seedname.dmn")
+    file = open("$seedname.dmn")
+    readline(file) # skip header
+    nband, nsymmetry, nkirr, nktot = parse.(Int, split(readline(file)))
+    readline(file)
+
+    function _read_integers(file)
+        data = Int[]
+        while !eof(file)
+            line = readline(file)
+            all(isspace, line) && break
+            append!(data, parse.(Int, split(line)))
+        end
+        data
+    end
+    ik_to_ikirr = _read_integers(file)
+    ikirr_to_ik = _read_integers(file)
+    ikirr_isym_to_isk = [_read_integers(file) for _ in 1:nkirr]
+
+    d_matrix_wann = zeros(ComplexF64, nwannier, nwannier, nsymmetry, nkirr)
+    d_matrix_band = zeros(ComplexF64, nband, nband, nsymmetry, nkirr)
+    for ik in 1:nkirr
+        for isym in 1:nsymmetry
+            for j in 1:nwannier, i in 1:nwannier
+                d_matrix_wann[i, j, isym, ik] = Complex(parse.(Float64, strip.(split(readline(file), ","), Ref(['(', ')', '\n', ' '])))...)
+            end
+            readline(file)
+        end
+    end
+    for ik in 1:nkirr
+        for isym in 1:nsymmetry
+            for j in 1:nband, i in 1:nband
+                d_matrix_band[i, j, isym, ik] = Complex(parse.(Float64, strip.(split(readline(file), ","), Ref(['(', ')', '\n', ' '])))...)
+            end
+            readline(file)
+        end
+    end
+    close(file)
+    (; nsymmetry, nkirr, ik_to_ikirr, ikirr_to_ik, ikirr_isym_to_isk, d_matrix_wann, d_matrix_band)
 end
