@@ -1,4 +1,5 @@
 module WannierFunctions
+    include("utility.jl")
     include("wannier90_parsers.jl")
     include("gauge_matrix.jl")
     include("objectives/AbstractWannierObjective.jl")

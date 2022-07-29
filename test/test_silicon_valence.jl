@@ -19,11 +19,8 @@ using WannierFunctions
     nnb = length(bvecs)
     lattice = SMatrix{3, 3}([-5.13164 0.00000 -5.13164; 0.00000 5.13164 5.13164; 5.13164 5.13164 0.00000]) * 0.52917720859
     recip_lattice = inv(lattice)' * 2π
-    wbs = [3.3622298066797027 for _ in 1:8]
     bvecs_cart = Ref(recip_lattice) .* bvecs
-
-    # Check Eq. (B1) of MV1997
-    @test norm(sum(wb * b * b' for (b, wb) in zip(bvecs_cart, wbs)) - I(3)) < 1e-10
+    wbs = WannierFunctions.compute_weights(bvecs_cart)
 
     # Initial Uk from amn
     U_initial = zeros(ComplexF64, nband, nwannier, nktot)

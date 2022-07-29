@@ -21,8 +21,8 @@ using LinearAlgebra
     nnb = length(bvecs)
     lattice = SMatrix{3, 3}([-5.13164 0.00000 -5.13164; 0.00000 5.13164 5.13164; 5.13164 5.13164 0.00000]) * 0.52917720859
     recip_lattice = inv(lattice)' * 2π
-    wbs = [3.3622298066797027 for _ in 1:8]
     bvecs_cart = Ref(recip_lattice) .* bvecs
+    wbs = WannierFunctions.compute_weights(bvecs_cart)
 
     obj_spread = MarzariVanderbiltObjective(; nband, nwannier, nktot, nnb, neighbors, wbs, bvecs_cart, mmn)
     obj_symmetry = SymmetryConstraintObjective(seedname, nwannier)
