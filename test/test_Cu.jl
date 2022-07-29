@@ -33,24 +33,24 @@ using WannierFunctions
     l_not_frozen = [.!x for x in l_frozen]
     p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn, l_frozen, l_not_frozen)
 
-    # Test projection-only WFs
+    # Test projection-only WFs without any window
     spreads_initial = compute_objective(U_initial, obj_spread).spreads
     r_proj_only_wannier90 = [
         [ 0.000000000031795, -0.000000000002363,  0.000000000001633],
         [ 0.000000000011655, -0.000000000014041,  0.000000000050861],
-        [-0.000000000010668, -0.000000000000238,  0.000000000007438],
+        [-0.000000000010668, -0.000000000000238,  0.000000000007437],
         [-0.000000000009023,  0.000000000060557,  0.000000000005202],
         [ 0.000000000020657, -0.000000000010528,  0.000000000015073],
-        [-0.902511729222057,  0.902511729256294,  0.902511729251714],
-        [ 0.902511729253828, -0.902511729252045, -0.902511729241448]
+        [-0.902511733195872,  0.902511733230109,  0.902511733225530],
+        [ 0.902511733227644, -0.902511733225861, -0.902511733215263]
     ]
-    spreads_proj_only_wannier90 = [0.645497433074877, 0.443233870388558, 0.443233870389778,
-        0.645419079898551, 0.443235741490892, 1.009068611500336, 1.009068611488011]
+    spreads_proj_only_wannier90 = [0.645497438759206, 0.443233874291733, 0.443233874292951,
+        0.645419085582191, 0.443235745394081, 1.009068620386320, 1.009068620373993]
     for iw in 1:nwannier
         @test spreads_initial.centers[iw] ≈ r_proj_only_wannier90[iw] atol=1e-10
     end
     @test spreads_initial.spreads ≈ spreads_proj_only_wannier90
-    @test spreads_initial.Ω ≈ 4.638757218231004
+    @test spreads_initial.Ω ≈ 4.638757259080474
     @test spreads_initial.ΩI ≈ 3.801670014961136
     @test spreads_initial.ΩD ≈ 0.005395159613377665
     @test spreads_initial.ΩOD ≈ 0.8316920436570605
