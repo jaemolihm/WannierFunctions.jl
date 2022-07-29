@@ -7,18 +7,14 @@ using WannierFunctions
     BASE_FOLDER = dirname(dirname(pathof(WannierFunctions)))
     seedname = joinpath(BASE_FOLDER, "test", "data", "Cu", "Cu")
 
-    nks = (3, 3, 3)
-    nktot = prod(nks)
-    kpts = [SVector(x, y, z) ./ nks for z in 0:nks[3]-1, y in 0:nks[2]-1, x in 0:nks[1]-1]
+    win_data = WannierFunctions.read_win(seedname)
+    (; nwannier, nband, lattice, ngrid, nktot, kpts) = win_data
 
     mmn, bvecs, neighbors = read_mmn(seedname, kpts);
     amn = read_amn(seedname);
     eig = read_eig(seedname);
 
-    nwannier = 7
-    nband = 10
     nnb = length(bvecs)
-    lattice = SMatrix{3, 3}([-3.411 0.0000 -3.411; 0.0000 3.411 3.411; 3.411 3.411 0.0000]) * 0.52917720859
     recip_lattice = inv(lattice)' * 2π
     bvecs_cart = Ref(recip_lattice) .* bvecs
     wbs = WannierFunctions.compute_weights(bvecs_cart)

@@ -1,5 +1,7 @@
 using StaticArrays
 using Dates
+using Unitful
+using UnitfulAtomic
 
 export read_mmn, read_amn, read_eig
 
@@ -144,4 +146,81 @@ function read_dmn(seedname, nwannier)
     end
     close(file)
     (; nsymmetry, nkirr, ik_to_ikirr, ikirr_to_ik, ikirr_isym_to_isk, d_matrix_wann, d_matrix_band)
+end
+
+"""
+    function parse_single_value(win_text, keyword, ::Type{T}, default=nothing::Union{Nothing, T}) where {T}
+Parse a single value of type `T` from a line "keyword = value" or "keyword : value".
+If default is not set and keyword is not found, throw error.
+"""
+function parse_single_value(win_text, keyword, ::Type{T}, default=nothing::Union{Nothing, T}) where {T}
+    i = findfirst(line -> occursin(keyword, line), win_text)
+    if i === nothing
+        # keyword not found in win_text
+        if default === nothing
+            error("Required keyword $keyword not found")
+        else
+            default
+        end
+    else
+        # keyword found in win_text
+        if T === String
+            split(win_text[i], (':', '='))[end]
+        else
+            parse(T, split(win_text[i], (':', '='))[end])
+        end
+    end
+end
+
+"""
+    read_win(seedname)
+Parse `seedname.win` file.
+"""
+function read_win(seedname)
+    println("Reading $seedname.win")
+    win_text = strip.(split(read("$seedname.win", String), "\n"))
+    filter!(line -> length(line) != 0 && line[1] != '!' && line[1] != '#', win_text)
+
+    # Parse num_wann and num_bands
+    nwannier = parse_single_value(win_text, "num_wann", Int)
+    nband = parse_single_value(win_text, "num_bands", Int, nwannier)
+
+    # Parse mp_grid
+    mp_grid_text = parse_single_value(win_text, "mp_grid", String)
+    ngrid = parse.(Int, split(mp_grid_text))
+    nktot = prod(ngrid)
+
+    # Parse unit_cell_cart
+    i = findfirst(line -> occursin("unit_cell_cart", line), win_text)
+    if i === nothing
+        error("unit_cell_cart block not found")
+    else
+        line = lowercase(win_text[i+1])
+        if occursin("ang", line) || occursin("bohr", line)
+            unit = line
+            i += 1
+        end
+        a1 = parse.(Float64, split(win_text[i+1]))
+        a2 = parse.(Float64, split(win_text[i+2]))
+        a3 = parse.(Float64, split(win_text[i+3]))
+        lattice = Mat3([a1 a2 a3])
+        # If unit is Bohr, convert to Angstrom
+        if unit == "bohr"
+            lattice = ustrip.(auconvert.(u"Å", lattice))
+        end
+    end
+
+    # Parse kpoints
+    kpts = Vec3{Float64}[]
+    i = findfirst(line -> occursin("kpoints", line), win_text)
+    if i === nothing
+        error("kpoints block not found")
+    else
+        for line in win_text[i+1:i+nktot]
+            xk = parse.(Float64, split(line))
+            push!(kpts, Vec3(xk))
+        end
+    end
+
+    (; nwannier, nband, ngrid, nktot, kpts, lattice)
 end
