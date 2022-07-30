@@ -3,8 +3,9 @@ export compute_objective_and_gradient!
 
 abstract type AbstractWannierObjective end
 
-function compute_objective(U, obj::AbstractWannierObjective)
-    compute_objective_and_gradient!(nothing, U, obj)
+"compute_objective(U, obj::AbstractWannierObjective, factor=1)"
+function compute_objective(U, obj::AbstractWannierObjective, factor=1)
+    compute_objective_and_gradient!(nothing, U, obj, factor)
 end
 
 """

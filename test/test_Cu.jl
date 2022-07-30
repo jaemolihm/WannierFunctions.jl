@@ -31,7 +31,8 @@ using WannierFunctions
     # Compute MV spread
     l_frozen = fill(falses(nband), nktot)
     l_not_frozen = [.!x for x in l_frozen]
-    p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn, l_frozen, l_not_frozen)
+    l_outer = fill(trues(nband), nktot)
+    p = (; nktot, nnb, nband, nwannier, bvecs_cart, wbs, neighbors, M_bands=mmn, l_frozen, l_not_frozen, l_outer)
 
     # Test projection-only WFs without any window
     spreads_initial = compute_objective(U_initial, obj_spread).spreads

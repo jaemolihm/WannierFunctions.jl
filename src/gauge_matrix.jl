@@ -1,7 +1,16 @@
 # We have three formats:
-# (X,Y): Ntot x nw x nw, Ntot x nb x nw
-# A: ntot x nb x nw
-# XY: (nw*nw + nb*nw) x Ntot
+# (X, Y): nktot × nw × nw, nktot × nb × nw
+# A: nktot × nb × nw
+# XY: (nw * nw + nb * nw) × nktot
+
+# Constraint on Y at each k point:
+# Y = [I  0;  <- bands inside frozen window (I is square)
+#      0  Y;  <- bands inside outer window, outside frozen window
+#      0  0]  <- bands outside outer window
+# Y[l_frozen, 1:length(l_frozen)] = I
+# Y[l_frozen, length(l_frozen)+1:end] = 0
+# Y[!l_frozen, 1:length(l_frozen)] = 0
+# Y[!l_outer, :] = 0
 
 """
 normalize and freeze a block of a matrix
@@ -11,7 +20,7 @@ UfUf* + UrUr* = I
 From this, obtain Uf*Ur = 0
 Strategy: first orthogonalize Uf, then project Uf out of Ur, then orthogonalize the range of Ur
 """
-function normalize_and_freeze(A,frozen,not_frozen)
+function normalize_and_freeze(A,frozen,not_frozen_outer)
     # orthogonalize Uf
     Uf = A[frozen,:]'
     U,S,V = svd(Uf)
@@ -19,7 +28,7 @@ function normalize_and_freeze(A,frozen,not_frozen)
     # Uf = normalize_matrix_chol(Uf)
 
     # project Uf out of Ur
-    Ur = A[not_frozen,:]'
+    Ur = A[not_frozen_outer,:]'
     Ur -= Uf*Uf'*Ur
 
     # # alternative method, maybe more stable but slower
@@ -40,15 +49,25 @@ function normalize_and_freeze(A,frozen,not_frozen)
     S[S .< eps] .= 0
     Ur = U*Diagonal(S)*V'
 
-    A[not_frozen,:] = Ur'
+    A[not_frozen_outer,:] = Ur'
 
-    B = vcat(Uf',Ur')
+    B = zero(A)
     B[frozen,:] .= Uf'
-    B[not_frozen,:] .= Ur'
+    B[not_frozen_outer,:] .= Ur'
     @assert isapprox(B'B, I, rtol=1e-12)
     @assert isapprox(B[frozen,:]*B[frozen,:]', I, rtol=1e-12)
     @assert norm(Uf'*Ur)<1e-10
     return B
+end
+
+function _check_X_Y(X, Y, l_frozen, l_not_frozen, l_outer)
+    lnf = count(l_frozen)
+    @assert Y' * Y ≈ I
+    @assert X' * X ≈ I
+    @assert Y[l_frozen, 1:lnf] ≈ I
+    @assert all(Y[l_not_frozen, 1:lnf] .≈ 0)
+    @assert all(Y[l_frozen, lnf+1:end] .≈ 0)
+    @assert all(Y[.!l_outer, :] .≈ 0)
 end
 
 function X_Y_to_A(p, X, Y)
@@ -56,12 +75,8 @@ function X_Y_to_A(p, X, Y)
     @views for ik = 1:p.nktot
         l_frozen = p.l_frozen[ik]
         l_not_frozen = p.l_not_frozen[ik]
-        lnf = count(l_frozen)
-        @assert Y[:,:, ik]' * Y[:,:, ik] ≈ I
-        @assert X[:,:, ik]' * X[:,:, ik] ≈ I
-        @assert Y[l_frozen,1:lnf, ik] ≈ I
-        @assert norm(Y[l_not_frozen,1:lnf, ik]) ≈ 0
-        @assert norm(Y[l_frozen,lnf+1:end, ik]) ≈ 0
+        l_outer = p.l_outer[ik]
+        _check_X_Y(X[:, :, ik], Y[:, :, ik], l_frozen, l_not_frozen, l_outer)
         mul!(A[:, :, ik], Y[:, :, ik], X[:, :, ik])
     end
     A
@@ -73,11 +88,13 @@ function A_to_XY(p,A)
     @views for ik = 1:p.nktot
         l_frozen = p.l_frozen[ik]
         l_not_frozen = p.l_not_frozen[ik]
+        l_outer = p.l_outer[ik]
         lnf = count(l_frozen)
 
-        Afrozen = normalize_and_freeze(A[:,:, ik], l_frozen, l_not_frozen)
+        l_not_frozen_outer = l_not_frozen .& l_outer
+        Afrozen = normalize_and_freeze(A[:,:, ik], l_frozen, l_not_frozen_outer)
         Af = Afrozen[l_frozen,:]
-        Ar = Afrozen[l_not_frozen,:]
+        Ar = Afrozen[l_not_frozen_outer,:]
 
         #determine Y
         if lnf != p.nwannier
@@ -85,20 +102,16 @@ function A_to_XY(p,A)
             proj = Hermitian((proj+proj')/2)
             D,V = eigen(proj) #sorted by increasing eigenvalue
         end
-        Y[l_frozen,1:lnf, ik] = Matrix(I,lnf,lnf)
+        Y[l_frozen, 1:lnf, ik] = I(lnf)
         if lnf != p.nwannier
-            Y[l_not_frozen,lnf+1:end, ik] = V[:,end-p.nwannier+lnf+1:end]
+            Y[l_not_frozen_outer,lnf+1:end, ik] = V[:,end-p.nwannier+lnf+1:end]
         end
 
         #determine X
         Xleft, S, Xright = svd(Y[:,:, ik]'*Afrozen)
         X[:,:, ik] = Xleft*Xright'
 
-        @assert Y[:,:, ik]'Y[:,:, ik] ≈ I
-        @assert X[:,:, ik]'X[:,:, ik] ≈ I
-        @assert Y[l_frozen,1:lnf, ik] ≈ I
-        @assert norm(Y[l_not_frozen,1:lnf, ik]) ≈ 0
-        @assert norm(Y[l_frozen,lnf+1:end, ik]) ≈ 0
+        _check_X_Y(X[:, :, ik], Y[:, :, ik], l_frozen, l_not_frozen, l_outer)
         @assert Y[:,:, ik]*X[:,:, ik] ≈ Afrozen
     end
     X, Y

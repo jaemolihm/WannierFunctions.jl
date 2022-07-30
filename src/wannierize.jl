@@ -12,11 +12,13 @@ function obj(p, X, Y, functional::AbstractWannierObjective)
     gradY = zero(Y)
     @views for ik = 1:p.nktot
         l_frozen = p.l_frozen[ik]
+        l_outer = p.l_outer[ik]
         nfroz = count(l_frozen)
         gradX[:, :, ik] .= Y[:, :, ik]' * grad[:, :, ik]
         gradY[:, :, ik] .= grad[:, :, ik] * X[:, :, ik]'
 
         gradY[l_frozen, :, ik] .= 0
+        gradY[.!l_outer, :, ik] .= 0
         gradY[:, 1:nfroz, ik] .= 0
     end
     objective, gradX, gradY
