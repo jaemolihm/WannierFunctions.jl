@@ -6,6 +6,17 @@ export Mat3
 const Vec3{T} = SVector{3, T} where T
 const Mat3{T} = SMatrix{3, 3, T, 9} where T
 
+function degenerate_groups(e; thresh=1e-4)
+    groups = [Int[]]
+    for i in axes(e, 1)
+        if i > 1 && abs(e[i] - e[i-1]) > thresh
+            push!(groups, Int[])
+        end
+        push!(groups[end], i)
+    end
+    groups
+end
+
 """
     compute_weights(bvecs_cart; shell_cutoff=1e-5)
 Find `wbs` that satisfy ``∑ᵢ wbs[i] * (bvecs_cart[i] * bvecs_cart[i]') = I(3)``.
